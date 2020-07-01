@@ -7,12 +7,12 @@ from ltr.helpers.handle_resp import resp_msg
 
 class SolrClient(BaseClient):
     def __init__(self, host=None):
+        self.solr = requests.Session()
         if host:
             self.solr_base_ep=host
             self.host = 'localhost'
         else:
             self.docker = os.environ.get('LTR_DOCKER') != None
-            self.solr = requests.Session()
 
             if self.docker:
                 self.host = 'solr'
@@ -51,30 +51,31 @@ class SolrClient(BaseClient):
         resp = requests.get('{}/admin/cores?'.format(self.solr_base_ep), params=params)
         resp_msg(msg="Created index {}".format(index), resp=resp)
 
-    def index_documents(self, index, doc_src):
+    def index_documents(self, index, doc_src, batch_size=350, workers=4):
+        import concurrent
+
         def commit():
-            resp = requests.get('{}/{}/update?commit=true'.format(self.solr_base_ep, index))
+            resp = self.solr.get('{}/{}/update?commit=true'.format(self.solr_base_ep, index))
             resp_msg(msg="Committed index {}".format(index), resp=resp)
 
         def flush(docs):
-            print('Flushing {} docs'.format(len(docs)))
-            resp = requests.post('{}/{}/update'.format(
+            resp = self.solr.post('{}/{}/update'.format(
                 self.solr_base_ep, index), json=docs)
-            resp_msg(msg="Done", resp=resp)
-            docs.clear()
+            resp_msg(msg="{} Docs Sent".format(len(docs)), resp=resp)
 
-        BATCH_SIZE = 5000
         docs = []
-        for doc in doc_src:
-            if 'release_date' in doc and doc['release_date'] is not None:
-                doc['release_date'] += 'T00:00:00Z'
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            for doc in doc_src:
+                if 'release_date' in doc and doc['release_date'] is not None:
+                    doc['release_date'] += 'T00:00:00Z'
 
-            docs.append(doc)
+                docs.append(doc)
 
-            if len(docs) % BATCH_SIZE == 0:
-                flush(docs)
+                if len(docs) % batch_size == 0:
+                    executor.submit(flush, docs)
+                    docs = []
 
-        flush(docs)
+            executor.submit(flush, docs)
         commit()
 
     def reset_ltr(self, index):

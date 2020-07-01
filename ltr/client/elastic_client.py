@@ -72,7 +72,7 @@ class ElasticClient(BaseClient):
             resp = self.es.indices.create(index, body=settings)
             resp_msg(msg="Created index {}".format(index), resp=ElasticResp(resp))
 
-    def index_documents(self, index, doc_src):
+    def index_documents(self, index, doc_src, batch_size=350, workers=4):
 
         def bulkDocs(doc_src):
             for doc in doc_src:
@@ -83,9 +83,13 @@ class ElasticClient(BaseClient):
                           "_source": doc}
                 yield addCmd
 
-        resp = elasticsearch.helpers.bulk(self.es, bulkDocs(doc_src), chunk_size=100)
+        resps = elasticsearch.helpers.parallel_bulk(self.es, bulkDocs(doc_src),
+                                                    thread_count=workers,
+                                                    chunk_size=batch_size)
+        # Wait for each one
+        resps = list(resps)
+        resp_msg(msg="Streaming Bulk index DONE {}".format(index), resp=BulkResp(resps))
         self.es.indices.refresh(index=index)
-        resp_msg(msg="Streaming Bulk index DONE {}".format(index), resp=BulkResp(resp))
 
     def reset_ltr(self, index):
         resp = requests.delete(self.elastic_ep)
