@@ -23,7 +23,7 @@ def write_training_set(training_set):
 
 def trainModel(training_set, out, features=None, kcv=None, ranker=6,
                leafs=10, trees=50, frate=1.0, shrinkage=0.1,
-               srate=1.0, bag=1, metric2t='DCG@10'):
+               srate=1.0, bag=1, metric2t='DCG@10', norm=None):
     """
     ranker
     - 6 for LambdaMART
@@ -48,6 +48,9 @@ def trainModel(training_set, out, features=None, kcv=None, ranker=6,
 
     if kcv is not None and kcv > 0:
         cmd += " -kcv {} ".format(kcv)
+    
+    if norm is not None:
+        cmd += f" -norm '{norm}''"
 
     print("Running %s" % cmd)
     result = os.popen(cmd).read()
@@ -63,7 +66,7 @@ def save_model(client, modelName, modelFile, index, featureSet):
 def train(client, training_set, modelName, featureSet,
           index, features=None,
           metric2t='DCG@10', leafs=10, trees=50,
-          frate=1.0, srate=1.0, bag=1, ranker=6, shrinkage=0.1):
+          frate=1.0, srate=1.0, bag=1, ranker=6, shrinkage=0.1, norm=None):
     """ Train and store a model into the search engine
         with the provided parameters"""
     modelFile='data/{}_model.txt'.format(modelName)
@@ -78,7 +81,8 @@ def train(client, training_set, modelName, featureSet,
                                srate=srate,
                                frate=frate,
                                trees=trees,
-                               shrinkage=shrinkage)
+                               shrinkage=shrinkage,
+                               norm=None)
     save_model(client, modelName, modelFile, index, featureSet)
     assert len(ranklibResult.trainingLogs) == 1
     return ranklibResult.trainingLogs[0]
