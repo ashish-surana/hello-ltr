@@ -1,22 +1,26 @@
 def get_classic_rating(year):
     if year > 2010:
         return 0
-    elif year > 1990:
+    elif year > 2000:
         return 1
-    elif year > 1970:
-        return 2
-    elif year > 1950:
+    elif year > 1990:
         return 3
+    elif year > 1970:
+        return 6
+    elif year > 1950:
+        return 8
     else:
-        return 4
+        return 10
 
 def get_latest_rating(year):
     if year > 2010:
-        return 4
+        return 10
+    elif year > 2000:
+        return 8
     elif year > 1990:
-        return 3
+        return 6
     elif year > 1970:
-        return 2
+        return 3
     elif year > 1950:
         return 1
     else:
