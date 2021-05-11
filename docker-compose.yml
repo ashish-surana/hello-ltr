@@ -2,6 +2,7 @@ version: '3'
 services:
   notebooks:
     build: .
+    image: o19s/hello-ltr-notebook
     container_name: hello-ltr-notebook
     ports:
       - 8888:8888 
@@ -15,6 +16,7 @@ services:
     build:
       context: ./notebooks/elasticsearch/.docker/es-docker/
       dockerfile: Dockerfile
+    image: o19s/hello-ltr-elastic
     container_name: hello-ltr-elastic
     ports:
       - 9200:9200
@@ -23,6 +25,7 @@ services:
     build:
       context: ./notebooks/elasticsearch/.docker/kb-docker/
       dockerfile: Dockerfile
+    image: o19s/hello-ltr-kibana
     container_name: hello-ltr-kibana
     expose:
       - "5601"
@@ -37,6 +40,7 @@ services:
     build:
       context: ./notebooks/solr/
       dockerfile: Dockerfile
+    image: o19s/hello-ltr-solr
     container_name: hello-ltr-solr
     ports:
       - 8983:8983 
